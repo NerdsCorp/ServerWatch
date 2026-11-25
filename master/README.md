@@ -4,13 +4,13 @@ Laravel 13 + Filament 5 control panel and JSON API. SQLite stores sites, SHA-256
 
 ## Run with Docker Compose
 
-Docker Compose runs the PHP-FPM master, Nginx, and the Laravel scheduler. SQLite data and Laravel runtime files use named Docker volumes and survive container replacement.
+Docker Compose runs one container with PHP-FPM, Nginx, and the Laravel scheduler supervised together. SQLite data and Laravel runtime files use named Docker volumes and survive container replacement.
 
 Run the following commands from the repository root:
 
 ```powershell
 Copy-Item master/.env.docker.example master/.env
-docker compose build
+docker compose pull
 docker compose run --rm --no-deps --entrypoint php master artisan key:generate --show
 ```
 
@@ -23,22 +23,22 @@ docker compose exec master php artisan make:filament-user
 
 Open `http://localhost:8080/admin` for local use. The web port binds to localhost only; put an HTTPS reverse proxy in front of it for remote agents. Point agents at the public HTTPS URL. Never run with `APP_DEBUG=true` in production. Do not publish the PHP-FPM port.
 
-The `master` container runs outstanding migrations before starting PHP-FPM. The separate `scheduler` container runs `schedule:work` for offline detection. Docker restarts both after a host reboot. Compose pulls `ghcr.io/nerdscorp/serverwatch-master:latest` and `ghcr.io/nerdscorp/serverwatch-web:latest` from GitHub Container Registry. Run `docker compose pull` to fetch published images before starting them. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
+The `master` container runs outstanding migrations, then supervises PHP-FPM, Nginx, and `php artisan schedule:work`. Docker restarts this container after a host reboot. Compose pulls the unified `ghcr.io/nerdscorp/serverwatch:latest` image from GitHub Container Registry and serves the web panel at `http://localhost:8080`. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
 
 Use a Linux container engine. On Windows 11 this can be Docker Desktop with its Linux container backend. A Windows Server host needs a Linux Docker engine/VM or a remote Linux Docker host for these Linux-based PHP and Nginx images.
 
 To stop or update:
 
 ```powershell
-docker compose down
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 For a native PHP installation, run commands from `master/`: copy `.env.example` to `.env`, install Composer dependencies, create `database/database.sqlite`, run `php artisan key:generate` and `php artisan migrate --force`, then create an admin with `php artisan make:filament-user`. Configure an HTTPS web server and run `php artisan schedule:work` or schedule `php artisan schedule:run` once a minute.
 
 ## Monitor the scheduler
 
-Docker Compose runs `php artisan schedule:work` in its scheduler container. Outside Docker, use `php artisan schedule:work` for development or schedule `php artisan schedule:run` once per minute. `monitor:check-offline` records one incident when a site transitions from online to stale; it does not create duplicate incidents every check. The stale threshold defaults to 180 seconds and can be changed with `MONITOR_OFFLINE_AFTER_SECONDS`.
+Docker Compose runs `php artisan schedule:work` under Supervisor in the master container. Outside Docker, use `php artisan schedule:work` for development or schedule `php artisan schedule:run` once per minute. `monitor:check-offline` records one incident when a site transitions from online to stale; it does not create duplicate incidents every check. The stale threshold defaults to 180 seconds and can be changed with `MONITOR_OFFLINE_AFTER_SECONDS`.
 
 ## Add a site and enroll its agent
 

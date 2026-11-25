@@ -7,12 +7,12 @@ set -eu
 mkdir -p "$(dirname "$DB_DATABASE")"
 chown -R www-data:www-data "$(dirname "$DB_DATABASE")" storage bootstrap/cache
 
-if [ "${1:-}" = "php-fpm" ]; then
+if [ "${1:-}" = "supervisord" ]; then
     rm -f /var/lib/serverwatch/.migrated
     su-exec www-data php artisan migrate --force
     touch /var/lib/serverwatch/.migrated
     chown www-data:www-data /var/lib/serverwatch/.migrated
-    exec php-fpm -F
+    exec /usr/bin/supervisord -c /etc/supervisord.conf -n
 fi
 
 exec "$@"

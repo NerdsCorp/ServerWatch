@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -43,9 +43,24 @@ jobs:
           path: artifacts/ServerWatch.Agent/
           if-no-files-found: error
           retention-days: 14
+          include-hidden-files: true
+
+      - name: Package agent for the GitHub Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $agentFiles = Get-ChildItem -Force artifacts/ServerWatch.Agent | Select-Object -ExpandProperty FullName
+          Compress-Archive -Path $agentFiles -DestinationPath artifacts/ServerWatch-Agent-win-x64.zip -CompressionLevel Optimal
+
+      - name: Attach agent ZIP to the GitHub Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/ServerWatch-Agent-win-x64.zip --clobber
 
   build-master:
-    name: Build master containers
+    name: Build unified container image
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -70,44 +85,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare PHP image metadata
-        id: php-meta
+      - name: Prepare unified image metadata
+        id: image-meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/nerdscorp/serverwatch-master
+          images: ghcr.io/nerdscorp/serverwatch
           tags: |
             type=ref,event=tag
             type=sha
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' || github.ref == 'refs/heads/main' }}
 
-      - name: Prepare web image metadata
-        id: web-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/nerdscorp/serverwatch-web
-          tags: |
-            type=ref,event=tag
-            type=sha
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-
-      - name: Build PHP master image
+      - name: Build and publish unified image
         uses: docker/build-push-action@v7
         with:
           context: ./master
           file: ./master/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.php-meta.outputs.tags }}
-          labels: ${{ steps.php-meta.outputs.labels }}
+          tags: ${{ steps.image-meta.outputs.tags }}
+          labels: ${{ steps.image-meta.outputs.labels }}
           cache-from: type=gha,scope=master
           cache-to: type=gha,mode=max,scope=master
-
-      - name: Build Nginx web image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./master
-          file: ./master/Dockerfile.nginx
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.web-meta.outputs.tags }}
-          labels: ${{ steps.web-meta.outputs.labels }}
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web

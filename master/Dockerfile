@@ -1,6 +1,6 @@
 FROM php:8.4-fpm-alpine AS php-base
 
-RUN apk add --no-cache su-exec icu-libs libzip \
+RUN apk add --no-cache su-exec icu-libs libzip nginx supervisor \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev \
     && docker-php-ext-install -j"$(nproc)" intl zip \
     && apk del .build-deps \
@@ -19,10 +19,14 @@ FROM php-base AS runtime
 WORKDIR /var/www/html
 COPY --from=build --chown=www-data:www-data /var/www/html /var/www/html
 COPY docker/entrypoint.sh /usr/local/bin/serverwatch-entrypoint
-RUN chmod 0555 /usr/local/bin/serverwatch-entrypoint \
-    && mkdir -p /var/lib/serverwatch \
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisord.conf /etc/supervisord.conf
+RUN sed -i 's/^user nginx;/user www-data;/' /etc/nginx/nginx.conf \
+    && chmod 0555 /usr/local/bin/serverwatch-entrypoint \
+    && mkdir -p /var/lib/serverwatch /tmp/nginx/client_body /tmp/nginx/fastcgi \
+    && chown -R www-data:www-data /tmp/nginx \
     && chown www-data:www-data /var/lib/serverwatch
 
-EXPOSE 9000
+EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/serverwatch-entrypoint"]
-CMD ["php-fpm"]
+CMD ["supervisord"]
