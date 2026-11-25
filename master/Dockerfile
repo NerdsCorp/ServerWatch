@@ -15,6 +15,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-autoloader --n
 COPY . .
 RUN composer dump-autoload --no-dev --optimize --no-interaction --no-scripts \
     && php artisan package:discover --no-interaction \
+    && php artisan filament:assets \
     && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
