@@ -32,7 +32,5 @@ RUN sed -i 's/^user nginx;/user www-data;/' /etc/nginx/nginx.conf \
     && chown www-data:www-data /var/lib/serverwatch
 
 EXPOSE 8080
-HEALTHCHECK --interval=5s --timeout=2s --retries=12 --start-period=20s \
-    CMD php -r 'exit(@file_get_contents("http://127.0.0.1:8080/up") === false ? 1 : 0);'
 ENTRYPOINT ["/usr/local/bin/serverwatch-entrypoint"]
 CMD ["supervisord"]
