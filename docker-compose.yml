@@ -2,7 +2,7 @@ name: serverwatch
 
 services:
   master:
-    image: ghcr.io/nerdscorp/serverwatch-master:latest
+    image: ghcr.io/nerdscorp/serverwatch:latest
     env_file:
       - ./master/.env
     environment:
@@ -15,43 +15,14 @@ services:
       - serverwatch-data:/var/lib/serverwatch
       - serverwatch-storage:/var/www/html/storage
       - serverwatch-cache:/var/www/html/bootstrap/cache
-    expose:
-      - "9000"
+    ports:
+      - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "test -f /var/lib/serverwatch/.migrated"]
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/up') === false ? 1 : 0);"]
       interval: 5s
       timeout: 2s
       retries: 12
       start_period: 20s
-    restart: unless-stopped
-
-  scheduler:
-    image: ghcr.io/nerdscorp/serverwatch-master:latest
-    env_file:
-      - ./master/.env
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
-      DB_CONNECTION: sqlite
-      DB_DATABASE: /var/lib/serverwatch/database.sqlite
-      LOG_CHANNEL: stderr
-    command: ["php", "artisan", "schedule:work"]
-    volumes:
-      - serverwatch-data:/var/lib/serverwatch
-      - serverwatch-storage:/var/www/html/storage
-      - serverwatch-cache:/var/www/html/bootstrap/cache
-    depends_on:
-      master:
-        condition: service_healthy
-    restart: unless-stopped
-
-  web:
-    image: ghcr.io/nerdscorp/serverwatch-web:latest
-    ports:
-      - "127.0.0.1:8080:80"
-    depends_on:
-      master:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:
