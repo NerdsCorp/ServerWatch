@@ -7,7 +7,7 @@ namespace ServerWatch.Agent;
 
 internal sealed class Worker(ILogger<Worker> logger, AgentSettings settings, AgentState state) : BackgroundService
 {
-    private readonly HttpClient _http = CreateClient();
+    private readonly HttpClient _http = CreateClient(settings);
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("ServerWatch agent started for {MasterUrl}.", settings.MasterUrl);
@@ -29,7 +29,7 @@ internal sealed class Worker(ILogger<Worker> logger, AgentSettings settings, Age
             try { await Task.Delay(delay, stoppingToken); } catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
         }
     }
-    private HttpClient CreateClient()
+    private static HttpClient CreateClient(AgentSettings settings)
     {
         var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri(settings.MasterUrl.TrimEnd('/') + "/"), Timeout = TimeSpan.FromSeconds(15) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.SiteKey);
