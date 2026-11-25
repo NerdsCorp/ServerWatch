@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -43,6 +43,21 @@ jobs:
           path: artifacts/ServerWatch.Agent/
           if-no-files-found: error
           retention-days: 14
+          include-hidden-files: true
+
+      - name: Package agent for the GitHub Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $agentFiles = Get-ChildItem -Force artifacts/ServerWatch.Agent | Select-Object -ExpandProperty FullName
+          Compress-Archive -Path $agentFiles -DestinationPath artifacts/ServerWatch-Agent-win-x64.zip -CompressionLevel Optimal
+
+      - name: Attach agent ZIP to the GitHub Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/ServerWatch-Agent-win-x64.zip --clobber
 
   build-master:
     name: Build master containers
@@ -78,7 +93,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=sha
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' || github.ref == 'refs/heads/main' }}
 
       - name: Prepare web image metadata
         id: web-meta
@@ -88,7 +103,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=sha
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' || github.ref == 'refs/heads/main' }}
 
       - name: Build PHP master image
         uses: docker/build-push-action@v7
