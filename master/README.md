@@ -13,7 +13,7 @@ Copy-Item master/.env.docker.example master/.env
 docker compose pull
 ```
 
-Set `APP_URL` in `master/.env` to the public HTTPS URL. For local-only development, set `APP_URL=http://localhost:8080` and `SESSION_SECURE_COOKIE=false`. On first start, the container generates and saves an `APP_KEY` in the persistent `serverwatch-data` volume if no valid key is configured. Back up that volume; it contains both the SQLite database and the key needed to decrypt Laravel data. You can also provide your own valid Laravel key as `APP_KEY` in `master/.env`.
+Set `APP_URL` in `master/.env` to the public HTTPS URL. For local-only development, set `APP_URL=http://localhost:8080` and `SESSION_SECURE_COOKIE=false`. Generate a key before starting the container with `php -r 'echo "base64:".base64_encode(random_bytes(32));'`, then put the output in `APP_KEY` in `master/.env`. Keep the same key across restarts and back it up with the database; changing it invalidates sessions and encrypted Laravel data.
 
 ```powershell
 docker compose up -d
@@ -22,7 +22,7 @@ docker compose exec master php artisan make:filament-user
 
 Open `http://localhost:8080/admin` for local use. The host port defaults to `8080`; set `SERVERWATCH_PORT` in your shell before starting Compose to choose a different available host port (for example, `$env:SERVERWATCH_PORT = "9000"` in PowerShell, then open `http://localhost:9000/admin`). The container listens on port `8080`. Put an HTTPS reverse proxy in front of it for remote agents and point agents at the public HTTPS URL. Never run with `APP_DEBUG=true` in production. Do not publish the PHP-FPM port.
 
-On startup, the `master` container creates the SQLite database file and Laravel storage/cache directories if they are missing, refreshes the package manifest, and runs outstanding migrations before supervising PHP-FPM, Nginx, and `php artisan schedule:work`. Docker restarts this container after a host reboot. Compose pulls the unified `ghcr.io/nerdscorp/serverwatch:latest` image from GitHub Container Registry and serves the web panel at `http://localhost:8080`. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
+On startup, the `master` container validates the configured `APP_KEY`, creates the SQLite database file and Laravel storage/cache directories if they are missing, refreshes the package manifest, and runs outstanding migrations before supervising PHP-FPM, Nginx, and `php artisan schedule:work`. Docker restarts this container after a host reboot. Compose pulls the unified `ghcr.io/nerdscorp/serverwatch:latest` image from GitHub Container Registry and serves the web panel at `http://localhost:8080`. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
 
 Use a Linux container engine. On Windows 11 this can be Docker Desktop with its Linux container backend. A Windows Server host needs a Linux Docker engine/VM or a remote Linux Docker host for these Linux-based PHP and Nginx images.
 
