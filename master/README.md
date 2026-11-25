@@ -23,7 +23,7 @@ docker compose exec master php artisan make:filament-user
 
 Open `http://localhost:8080/admin` for local use. The web port binds to localhost only; put an HTTPS reverse proxy in front of it for remote agents. Point agents at the public HTTPS URL. Never run with `APP_DEBUG=true` in production. Do not publish the PHP-FPM port.
 
-The `master` container runs outstanding migrations before starting PHP-FPM. The separate `scheduler` container runs `schedule:work` for offline detection. Docker restarts both after a host reboot. Compose builds the images as `serverwatch/master:local` and `serverwatch/web:local`. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
+The `master` container runs outstanding migrations before starting PHP-FPM. The separate `scheduler` container runs `schedule:work` for offline detection. Docker restarts both after a host reboot. Compose pulls `ghcr.io/nerdscorp/serverwatch-master:latest` and `ghcr.io/nerdscorp/serverwatch-web:latest` from GitHub Container Registry. Run `docker compose pull` to fetch published images before starting them. SQLite is stored in the explicitly named `serverwatch-data` volume at `/var/lib/serverwatch/database.sqlite`; back up that volume regularly. `docker compose down` preserves named volumes; `docker compose down -v` deletes them and all stored monitoring data.
 
 Use a Linux container engine. On Windows 11 this can be Docker Desktop with its Linux container backend. A Windows Server host needs a Linux Docker engine/VM or a remote Linux Docker host for these Linux-based PHP and Nginx images.
 

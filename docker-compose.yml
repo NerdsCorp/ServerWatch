@@ -2,10 +2,7 @@ name: serverwatch
 
 services:
   master:
-    image: serverwatch/master:local
-    build:
-      context: ./master
-      dockerfile: Dockerfile
+    image: ghcr.io/nerdscorp/serverwatch-master:latest
     env_file:
       - ./master/.env
     environment:
@@ -29,10 +26,7 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: serverwatch/master:local
-    build:
-      context: ./master
-      dockerfile: Dockerfile
+    image: ghcr.io/nerdscorp/serverwatch-master:latest
     env_file:
       - ./master/.env
     environment:
@@ -52,10 +46,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: serverwatch/web:local
-    build:
-      context: ./master
-      dockerfile: Dockerfile.nginx
+    image: ghcr.io/nerdscorp/serverwatch-web:latest
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
