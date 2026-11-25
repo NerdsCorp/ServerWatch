@@ -1,0 +1,8 @@
+.dotnet-home/
+**/bin/
+**/obj/
+publish/
+master/.env
+master/vendor/
+master/database/database.sqlite
+src/ServerWatch.Agent/.env
