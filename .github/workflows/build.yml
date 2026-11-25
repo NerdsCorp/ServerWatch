@@ -26,7 +26,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore ServerWatch.slnx
+        run: dotnet restore ServerWatch.slnx -r win-x64
 
       - name: Publish self-contained Windows agent
         run: dotnet publish src/ServerWatch.Agent/ServerWatch.Agent.csproj -c Release -r win-x64 --self-contained true --no-restore -o artifacts/ServerWatch.Agent
