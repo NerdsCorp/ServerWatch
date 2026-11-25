@@ -1,9 +1,7 @@
 FROM php:8.4-fpm-alpine AS php-base
 
-RUN apk add --no-cache oniguruma libcurl sqlite-libs libxml2 su-exec \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS oniguruma-dev curl-dev sqlite-dev libxml2-dev \
-    && docker-php-ext-install -j"$(nproc)" pdo_sqlite sqlite3 mbstring dom xml curl \
-    && apk del .build-deps
+RUN apk add --no-cache su-exec \
+    && php -r 'foreach (["curl", "dom", "mbstring", "pdo_sqlite", "sqlite3", "xml"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing required PHP extension: {$extension}\n"); exit(1); } }'
 
 WORKDIR /var/www/html
 
