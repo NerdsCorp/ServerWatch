@@ -11,10 +11,9 @@ Run the following commands from the repository root:
 ```powershell
 Copy-Item master/.env.docker.example master/.env
 docker compose pull
-docker compose run --rm --no-deps --entrypoint php master artisan key:generate --show
 ```
 
-Copy the generated `base64:...` value into `APP_KEY` in `master/.env`, and set `APP_URL` to the public HTTPS URL. For local-only development, set `APP_URL=http://localhost:8080` and `SESSION_SECURE_COOKIE=false` in `master/.env`.
+Set `APP_URL` in `master/.env` to the public HTTPS URL. For local-only development, set `APP_URL=http://localhost:8080` and `SESSION_SECURE_COOKIE=false`. On first start, the container generates and saves an `APP_KEY` in the persistent `serverwatch-data` volume if no valid key is configured. Back up that volume; it contains both the SQLite database and the key needed to decrypt Laravel data. You can also provide your own valid Laravel key as `APP_KEY` in `master/.env`.
 
 ```powershell
 docker compose up -d
