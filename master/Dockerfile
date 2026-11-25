@@ -1,7 +1,10 @@
 FROM php:8.4-fpm-alpine AS php-base
 
-RUN apk add --no-cache su-exec \
-    && php -r 'foreach (["curl", "dom", "mbstring", "pdo_sqlite", "sqlite3", "xml"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing required PHP extension: {$extension}\n"); exit(1); } }'
+RUN apk add --no-cache su-exec icu-libs \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev \
+    && docker-php-ext-install -j"$(nproc)" intl \
+    && apk del .build-deps \
+    && php -r 'foreach (["curl", "dom", "intl", "mbstring", "pdo_sqlite", "sqlite3", "xml"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing required PHP extension: {$extension}\n"); exit(1); } }'
 
 WORKDIR /var/www/html
 
